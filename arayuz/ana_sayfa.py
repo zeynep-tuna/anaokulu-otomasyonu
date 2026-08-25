@@ -13,24 +13,38 @@ from hakkimizda import hakkimizda_goster
 from siniflar import siniflar_stilleri_yukle, siniflar_goster
 from iletisim import iletisim_stilleri_yukle, iletisim_goster
 from giris import giris_stilleri_yukle, giris_goster
+from sifre_degistir import sifre_degistir_stilleri_yukle, sifre_degistir_goster
+from admin import admin_stilleri_yukle, admin_paneli_goster
+from ogretmen import ogretmen_paneli_goster
+from veli import veli_paneli_goster
 
 st.set_page_config(page_title="Minik Adımlar Anaokulu", page_icon="🌈", layout="wide")
 
-# --- Tüm stilleri yükle (her dosya kendi CSS'ini getirir) ---
-ortak_stilleri_yukle()
-header_yukle()
-footer_yukle()
-siniflar_stilleri_yukle()
-iletisim_stilleri_yukle()
-giris_stilleri_yukle()
-
-# --- OTURUM DURUMU ---
+# --- OTURUM DURUMU (CSS yüklemeden ÖNCE tanımlanmalı, çünkü aşağıda kullanılıyor) ---
 if "giris_yapildi" not in st.session_state:
     st.session_state.giris_yapildi = False
     st.session_state.rol_adi = None
     st.session_state.kullanici_adi = None
 if "sayfa" not in st.session_state:
     st.session_state.sayfa = "anasayfa"
+
+_admin_aktif = st.session_state.giris_yapildi and (st.session_state.rol_adi or "").strip().lower() == "admin"
+
+# --- SADECE GEREKLİ STİLLERİ YÜKLE ---
+# Admin paneli tamamen ayrı bir arayüz (kendi header/footer'ı yok), bu yüzden
+# halka açık sitenin CSS'lerini (header, footer, sınıflar, iletişim, giriş)
+# HİÇ yüklemiyoruz — bu hem gereksiz hem de olası boşluk/düzen sorunlarına
+# yol açabiliyordu.
+if _admin_aktif:
+    admin_stilleri_yukle()
+else:
+    ortak_stilleri_yukle()
+    header_yukle()
+    footer_yukle()
+    siniflar_stilleri_yukle()
+    iletisim_stilleri_yukle()
+    giris_stilleri_yukle()
+    sifre_degistir_stilleri_yukle()
 
 
 def anasayfa_goster():
@@ -108,8 +122,13 @@ def anasayfa_goster():
 # YÖNLENDİRME
 # ============================================================
 if st.session_state.sayfa == "giris" and not st.session_state.giris_yapildi:
-    # Giriş sayfası — header/footer YOK, kendine özgü tasarım
     giris_goster()
+
+elif st.session_state.sayfa == "sifre_degistir" and st.session_state.giris_yapildi:
+    sifre_degistir_goster()
+
+elif _admin_aktif:
+    admin_paneli_goster()
 
 else:
     header()
@@ -117,19 +136,26 @@ else:
     with st.container(key="sayfa_icerigi"):
 
         if st.session_state.giris_yapildi:
-            st.markdown(f"""
-            <div class="baslik-kutu">
-                <h1>Hoş geldiniz, {st.session_state.kullanici_adi}! 🎉</h1>
-                <p>Rolünüz: {st.session_state.rol_adi}</p>
-            </div>
-            """, unsafe_allow_html=True)
-            if st.button("Çıkış Yap"):
-                st.session_state.giris_yapildi = False
-                st.session_state.rol_adi = None
-                st.session_state.kullanici_adi = None
-                st.session_state.sayfa = "anasayfa"
-                st.rerun()
-            st.info("Bu rol için özel panel yakında burada olacak.")
+            rol = (st.session_state.rol_adi or "").strip().lower()
+            kullanici_adi = st.session_state.kullanici_adi
+
+            if rol == "ogretmen":
+                ogretmen_paneli_goster()
+
+            elif rol == "veli":
+                veli_paneli_goster()
+
+            elif rol == "personel":
+                st.markdown(f"""
+                <div class="baslik-kutu">
+                    <h1>🧹 Personel Paneli</h1>
+                    <p>Hoş geldiniz, {kullanici_adi}!</p>
+                </div>
+                """, unsafe_allow_html=True)
+                st.info("Personel paneli (temizlik, yemek listesi) ileride buraya eklenecek.")
+
+            else:
+                st.warning(f"'{st.session_state.rol_adi}' rolü için henüz bir panel tanımlanmadı.")
 
         elif st.session_state.sayfa == "hakkimizda":
             hakkimizda_goster()

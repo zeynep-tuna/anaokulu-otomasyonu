@@ -4,6 +4,7 @@ düzenlenecek.
 """
 
 import streamlit as st
+import pandas as pd
 from veritabani import listele
 
 GIRIS_CSS = """
@@ -71,8 +72,11 @@ def giris_goster():
             sifre_giris = st.text_input("Şifre", type="password")
             giris_buton = st.form_submit_button("Giriş Yap")
             if giris_buton:
+                # ogretmen_id, veli_id, personel_id de çekiliyor — rol bazlı
+                # panellerde (öğretmen kendi sınıfını, veli kendi çocuğunu
+                # görebilsin diye) hangi kaydın sahibi olduğumuzu bilmemiz lazım.
                 sorgu = """
-                    SELECT k.kullanici_adi, r.rol_adi
+                    SELECT k.kullanici_adi, r.rol_adi, k.ogretmen_id, k.veli_id, k.personel_id
                     FROM kullanici k
                     JOIN rol r ON k.rol_id = r.rol_id
                     WHERE k.kullanici_adi = ? AND k.sifre_hash = ?
@@ -82,6 +86,15 @@ def giris_goster():
                     st.session_state.giris_yapildi = True
                     st.session_state.rol_adi = sonuc.iloc[0]["rol_adi"]
                     st.session_state.kullanici_adi = sonuc.iloc[0]["kullanici_adi"]
+                    # pandas'tan gelen sayılar numpy.int64 tipinde oluyor,
+                    # pyodbc bunu parametre olarak kabul etmiyor — normal
+                    # Python int'e çeviriyoruz (boşsa None bırakıyoruz).
+                    def _guvenli_int(deger):
+                        return int(deger) if pd.notna(deger) else None
+
+                    st.session_state.ogretmen_id = _guvenli_int(sonuc.iloc[0]["ogretmen_id"])
+                    st.session_state.veli_id = _guvenli_int(sonuc.iloc[0]["veli_id"])
+                    st.session_state.personel_id = _guvenli_int(sonuc.iloc[0]["personel_id"])
                     st.session_state.sayfa = "anasayfa"
                     st.rerun()
                 else:
