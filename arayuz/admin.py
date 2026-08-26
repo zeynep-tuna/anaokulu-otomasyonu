@@ -7,8 +7,12 @@ Her tablo İKİ sorgu kullanır:
   - "gosterge_sorgusu": silme işleminde, kaydı TANIYAN bir metne göre (örn. "Ecrin Yılmaz")
     seçim yapmak için — kullanıcı hiçbir zaman ID görmüyor/girmiyor.
 
-Öğrenciler tablosu ayrıca özel bir kart görünümüne sahip (ogrenciler_yonet),
-her kartta ✏️ Güncelle butonu ile satır bazlı düzenleme yapılabiliyor.
+TÜM tablolar tek bir genel fonksiyonla (genel_tablo_yonet) yönetiliyor —
+her kayıt kart görünümünde, ✏️ Güncelle butonuyla satır bazlı düzenlenebiliyor.
+Her tablonun "alanlar" listesindeki ilişkisel sütunlar (veli_id, sinif_id,
+ogretmen_id, personel_id, rol_id gibi) "iliski" tipiyle tanımlanır — kullanıcı
+ham ID yazmak yerine isimden seçer, opsiyonel ilişkilerde "— Yok —" seçeneği
+gerçek NULL gönderir (yanlışlıkla geçersiz bir ID/0 girilmesini önler).
 """
 
 import streamlit as st
@@ -281,12 +285,12 @@ TABLO_TANIMLARI = {
         """,
         "gosterge_sorgusu": "SELECT ogrenci_id, ad + ' ' + soyad AS gosterge FROM ogrenci",
         "alanlar": [
-            ("ad", "text", "Ad"),
-            ("soyad", "text", "Soyad"),
-            ("dogum_tarihi", "date", "Doğum Tarihi"),
-            ("kayit_tarihi", "date", "Kayıt Tarihi"),
-            ("veli_id", "number", "Veli ID"),
-            ("sinif_id", "number", "Sınıf ID"),
+            ("ad", "text", "Ad", None),
+            ("soyad", "text", "Soyad", None),
+            ("dogum_tarihi", "date", "Doğum Tarihi", None),
+            ("kayit_tarihi", "date", "Kayıt Tarihi", None),
+            ("veli_id", "iliski", "Veli", {"tablo": "veli", "id_kolon": "veli_id", "format": "{ad} {soyad}", "zorunlu": True}),
+            ("sinif_id", "iliski", "Sınıf", {"tablo": "sinif", "id_kolon": "sinif_id", "format": "{sinif_adi}", "zorunlu": False}),
         ],
     },
     "veli": {
@@ -299,10 +303,10 @@ TABLO_TANIMLARI = {
         """,
         "gosterge_sorgusu": "SELECT veli_id, ad + ' ' + soyad AS gosterge FROM veli",
         "alanlar": [
-            ("ad", "text", "Ad"),
-            ("soyad", "text", "Soyad"),
-            ("tel_no", "text", "Telefon No"),
-            ("adres", "text", "Adres"),
+            ("ad", "text", "Ad", None),
+            ("soyad", "text", "Soyad", None),
+            ("tel_no", "text", "Telefon No", None),
+            ("adres", "text", "Adres", None),
         ],
     },
     "ogretmen": {
@@ -316,12 +320,12 @@ TABLO_TANIMLARI = {
         """,
         "gosterge_sorgusu": "SELECT ogretmen_id, ad + ' ' + soyad AS gosterge FROM ogretmen",
         "alanlar": [
-            ("ad", "text", "Ad"),
-            ("soyad", "text", "Soyad"),
-            ("tel_no", "text", "Telefon No"),
-            ("adres", "text", "Adres"),
-            ("ise_giris_tarihi", "date", "İşe Giriş Tarihi"),
-            ("tecrube", "number", "Tecrübe (yıl)"),
+            ("ad", "text", "Ad", None),
+            ("soyad", "text", "Soyad", None),
+            ("tel_no", "text", "Telefon No", None),
+            ("adres", "text", "Adres", None),
+            ("ise_giris_tarihi", "date", "İşe Giriş Tarihi", None),
+            ("tecrube", "number", "Tecrübe (yıl)", None),
         ],
     },
     "sinif": {
@@ -337,10 +341,10 @@ TABLO_TANIMLARI = {
         """,
         "gosterge_sorgusu": "SELECT sinif_id, sinif_adi AS gosterge FROM sinif",
         "alanlar": [
-            ("sinif_adi", "text", "Sınıf Adı"),
-            ("yas_grubu", "text", "Yaş Grubu"),
-            ("kapasite", "number", "Kapasite"),
-            ("ogretmen_id", "number", "Öğretmen ID"),
+            ("sinif_adi", "text", "Sınıf Adı", None),
+            ("yas_grubu", "text", "Yaş Grubu", None),
+            ("kapasite", "number", "Kapasite", None),
+            ("ogretmen_id", "iliski", "Öğretmen", {"tablo": "ogretmen", "id_kolon": "ogretmen_id", "format": "{ad} {soyad}", "zorunlu": False}),
         ],
     },
     "odemeler": {
@@ -362,16 +366,16 @@ TABLO_TANIMLARI = {
             LEFT JOIN ogrenci o ON od.ogrenci_id = o.ogrenci_id
         """,
         "alanlar": [
-            ("odeme_tutari", "decimal", "Ödeme Tutarı"),
-            ("tarih", "date", "Tarih"),
-            ("odeme_sekli", "text", "Ödeme Şekli"),
-            ("odeme_durumu", "text", "Ödeme Durumu"),
-            ("toplam_tutar", "decimal", "Toplam Tutar"),
-            ("kalan_tutar", "decimal", "Kalan Tutar"),
-            ("taksit_sayisi", "number", "Taksit Sayısı"),
-            ("kalan_taksit_sayisi", "number", "Kalan Taksit Sayısı"),
-            ("ogrenci_id", "number", "Öğrenci ID"),
-            ("personel_id", "number", "Personel ID"),
+            ("odeme_tutari", "decimal", "Ödeme Tutarı", None),
+            ("tarih", "date", "Tarih", None),
+            ("odeme_sekli", "text", "Ödeme Şekli", None),
+            ("odeme_durumu", "text", "Ödeme Durumu", None),
+            ("toplam_tutar", "decimal", "Toplam Tutar", None),
+            ("kalan_tutar", "decimal", "Kalan Tutar", None),
+            ("taksit_sayisi", "number", "Taksit Sayısı", None),
+            ("kalan_taksit_sayisi", "number", "Kalan Taksit Sayısı", None),
+            ("ogrenci_id", "iliski", "Öğrenci", {"tablo": "ogrenci", "id_kolon": "ogrenci_id", "format": "{ad} {soyad}", "zorunlu": True}),
+            ("personel_id", "iliski", "Personel", {"tablo": "personel", "id_kolon": "personel_id", "format": "{ad} {soyad}", "zorunlu": False}),
         ],
     },
     "ders": {
@@ -389,11 +393,11 @@ TABLO_TANIMLARI = {
         """,
         "gosterge_sorgusu": "SELECT ders_id, ders_adi AS gosterge FROM ders",
         "alanlar": [
-            ("ders_adi", "text", "Ders Adı"),
-            ("baslangic_saati", "time", "Başlangıç Saati"),
-            ("bitis_saati", "time", "Bitiş Saati"),
-            ("ogretmen_id", "number", "Öğretmen ID"),
-            ("sinif_id", "number", "Sınıf ID"),
+            ("ders_adi", "text", "Ders Adı", None),
+            ("baslangic_saati", "time", "Başlangıç Saati", None),
+            ("bitis_saati", "time", "Bitiş Saati", None),
+            ("ogretmen_id", "iliski", "Öğretmen", {"tablo": "ogretmen", "id_kolon": "ogretmen_id", "format": "{ad} {soyad}", "zorunlu": True}),
+            ("sinif_id", "iliski", "Sınıf", {"tablo": "sinif", "id_kolon": "sinif_id", "format": "{sinif_adi}", "zorunlu": True}),
         ],
     },
     "etkinlik": {
@@ -411,12 +415,12 @@ TABLO_TANIMLARI = {
         """,
         "gosterge_sorgusu": "SELECT etkinlik_id, baslik + ' - ' + CONVERT(varchar, tarih) AS gosterge FROM etkinlik",
         "alanlar": [
-            ("tarih", "date", "Tarih"),
-            ("saat", "time", "Saat"),
-            ("baslik", "text", "Başlık"),
-            ("aciklama", "textarea", "Açıklama"),
-            ("ogretmen_id", "number", "Öğretmen ID (varsa)"),
-            ("sinif_id", "number", "Sınıf ID (varsa)"),
+            ("tarih", "date", "Tarih", None),
+            ("saat", "time", "Saat", None),
+            ("baslik", "text", "Başlık", None),
+            ("aciklama", "textarea", "Açıklama", None),
+            ("ogretmen_id", "iliski", "Öğretmen (varsa)", {"tablo": "ogretmen", "id_kolon": "ogretmen_id", "format": "{ad} {soyad}", "zorunlu": False}),
+            ("sinif_id", "iliski", "Sınıf (varsa)", {"tablo": "sinif", "id_kolon": "sinif_id", "format": "{sinif_adi}", "zorunlu": False}),
         ],
     },
     "yoklama": {
@@ -435,9 +439,9 @@ TABLO_TANIMLARI = {
             LEFT JOIN ogrenci o ON y.ogrenci_id = o.ogrenci_id
         """,
         "alanlar": [
-            ("ogrenci_id", "number", "Öğrenci ID"),
-            ("tarih", "date", "Tarih"),
-            ("durum", "text", "Durum (var/yok/izinli)"),
+            ("ogrenci_id", "iliski", "Öğrenci", {"tablo": "ogrenci", "id_kolon": "ogrenci_id", "format": "{ad} {soyad}", "zorunlu": True}),
+            ("tarih", "date", "Tarih", None),
+            ("durum", "text", "Durum (var/yok/izinli)", None),
         ],
     },
     "personel": {
@@ -452,14 +456,14 @@ TABLO_TANIMLARI = {
         """,
         "gosterge_sorgusu": "SELECT personel_id, ad + ' ' + soyad AS gosterge FROM personel",
         "alanlar": [
-            ("ad", "text", "Ad"),
-            ("soyad", "text", "Soyad"),
-            ("tel_no", "text", "Telefon No"),
-            ("adres", "text", "Adres"),
-            ("tecrube", "number", "Tecrübe (yıl)"),
-            ("ise_giris_tarihi", "date", "İşe Giriş Tarihi"),
-            ("pozisyon", "text", "Pozisyon"),
-            ("gorev", "text", "Görev"),
+            ("ad", "text", "Ad", None),
+            ("soyad", "text", "Soyad", None),
+            ("tel_no", "text", "Telefon No", None),
+            ("adres", "text", "Adres", None),
+            ("tecrube", "number", "Tecrübe (yıl)", None),
+            ("ise_giris_tarihi", "date", "İşe Giriş Tarihi", None),
+            ("pozisyon", "text", "Pozisyon", None),
+            ("gorev", "text", "Görev", None),
         ],
     },
     "saglik_listesi": {
@@ -479,12 +483,12 @@ TABLO_TANIMLARI = {
             LEFT JOIN ogrenci o ON sl.ogrenci_id = o.ogrenci_id
         """,
         "alanlar": [
-            ("alerji", "text", "Alerji"),
-            ("kronik_hastalik", "text", "Kronik Hastalık"),
-            ("acil_durum_notu", "textarea", "Acil Durum Notu"),
-            ("acil_durum_tel", "text", "Acil Durum Telefonu"),
-            ("ogrenci_id", "number", "Öğrenci ID"),
-            ("personel_id", "number", "Personel ID"),
+            ("alerji", "text", "Alerji", None),
+            ("kronik_hastalik", "text", "Kronik Hastalık", None),
+            ("acil_durum_notu", "textarea", "Acil Durum Notu", None),
+            ("acil_durum_tel", "text", "Acil Durum Telefonu", None),
+            ("ogrenci_id", "iliski", "Öğrenci", {"tablo": "ogrenci", "id_kolon": "ogrenci_id", "format": "{ad} {soyad}", "zorunlu": True}),
+            ("personel_id", "iliski", "Personel (varsa)", {"tablo": "personel", "id_kolon": "personel_id", "format": "{ad} {soyad}", "zorunlu": False}),
         ],
     },
     "yemek_listesi": {
@@ -492,16 +496,17 @@ TABLO_TANIMLARI = {
         "ikon": "🍴",
         "id_kolon": "yemek_listesi_id",
         "goruntuleme_sorgusu": """
-            SELECT yl.yemek_adi AS "Yemek Adı", yl.tarih AS "Tarih",
+            SELECT yl.yemek_adi AS "Yemek Adı", yl.yemek_turu AS "Yemek Türü", yl.tarih AS "Tarih",
                    p.ad AS "Sorumlu Adı", p.soyad AS "Sorumlu Soyadı"
             FROM yemek_listesi yl
             LEFT JOIN personel p ON yl.personel_id = p.personel_id
         """,
         "gosterge_sorgusu": "SELECT yemek_listesi_id, yemek_adi + ' - ' + CONVERT(varchar, tarih) AS gosterge FROM yemek_listesi",
         "alanlar": [
-            ("yemek_adi", "text", "Yemek Adı"),
-            ("tarih", "date", "Tarih"),
-            ("personel_id", "number", "Personel ID"),
+            ("yemek_adi", "text", "Yemek Adı", None),
+            ("yemek_turu", "text", "Yemek Türü", None),
+            ("tarih", "date", "Tarih", None),
+            ("personel_id", "iliski", "Personel", {"tablo": "personel", "id_kolon": "personel_id", "format": "{ad} {soyad}", "zorunlu": True}),
         ],
     },
     "temizlik_listesi": {
@@ -516,10 +521,10 @@ TABLO_TANIMLARI = {
         """,
         "gosterge_sorgusu": "SELECT temizlik_listesi_id, alan + ' - ' + CONVERT(varchar, tarih) AS gosterge FROM temizlik_listesi",
         "alanlar": [
-            ("alan", "text", "Alan"),
-            ("tarih", "date", "Tarih"),
-            ("durum", "text", "Durum"),
-            ("personel_id", "number", "Personel ID"),
+            ("alan", "text", "Alan", None),
+            ("tarih", "date", "Tarih", None),
+            ("durum", "text", "Durum", None),
+            ("personel_id", "iliski", "Personel", {"tablo": "personel", "id_kolon": "personel_id", "format": "{ad} {soyad}", "zorunlu": True}),
         ],
     },
     "kullanici": {
@@ -534,13 +539,13 @@ TABLO_TANIMLARI = {
         """,
         "gosterge_sorgusu": "SELECT kullanici_id, kullanici_adi AS gosterge FROM kullanici",
         "alanlar": [
-            ("kullanici_adi", "text", "Kullanıcı Adı"),
-            ("sifre_hash", "password", "Şifre"),
-            ("tel_no", "text", "Telefon No"),
-            ("rol_id", "number", "Rol ID"),
-            ("ogretmen_id", "number", "Öğretmen ID (varsa)"),
-            ("veli_id", "number", "Veli ID (varsa)"),
-            ("personel_id", "number", "Personel ID (varsa)"),
+            ("kullanici_adi", "text", "Kullanıcı Adı", None),
+            ("sifre_hash", "password", "Şifre", None),
+            ("tel_no", "text", "Telefon No", None),
+            ("rol_id", "iliski", "Rol", {"tablo": "rol", "id_kolon": "rol_id", "format": "{rol_adi}", "zorunlu": True}),
+            ("ogretmen_id", "iliski", "Öğretmen (varsa)", {"tablo": "ogretmen", "id_kolon": "ogretmen_id", "format": "{ad} {soyad}", "zorunlu": False}),
+            ("veli_id", "iliski", "Veli (varsa)", {"tablo": "veli", "id_kolon": "veli_id", "format": "{ad} {soyad}", "zorunlu": False}),
+            ("personel_id", "iliski", "Personel (varsa)", {"tablo": "personel", "id_kolon": "personel_id", "format": "{ad} {soyad}", "zorunlu": False}),
         ],
     },
     "rol": {
@@ -550,16 +555,52 @@ TABLO_TANIMLARI = {
         "goruntuleme_sorgusu": "SELECT rol_adi AS \"Rol Adı\" FROM rol",
         "gosterge_sorgusu": "SELECT rol_id, rol_adi AS gosterge FROM rol",
         "alanlar": [
-            ("rol_adi", "text", "Rol Adı"),
+            ("rol_adi", "text", "Rol Adı", None),
         ],
     },
 }
 
 
-def _alan_gir(kolon, tip, etiket, key_on_ek, mevcut_deger=None):
+def _alan_gir(kolon, tip, etiket, key_on_ek, mevcut_deger=None, iliski=None):
     """mevcut_deger verilmezse (None) boş bir 'Yeni Kayıt Ekle' alanı,
-    verilirse o değerle önceden doldurulmuş bir 'Güncelle' alanı oluşturur."""
+    verilirse o değerle önceden doldurulmuş bir 'Güncelle' alanı oluşturur.
+    tip == "iliski" ise, ham ID yazmak yerine kullanıcıya isimden bir
+    seçim (selectbox) sunar — opsiyonel ilişkilerde "— Yok —" seçeneği
+    de vardır, seçilirse veritabanına gerçek NULL gönderilir (0 değil)."""
     key = f"{key_on_ek}_{kolon}"
+
+    if tip == "iliski":
+        tablo = iliski["tablo"]
+        id_kolon = iliski["id_kolon"]
+        format_str = iliski["format"]
+        zorunlu = iliski.get("zorunlu", True)
+
+        kayitlar = listele(f"SELECT * FROM {tablo}")
+        secenekler = {}
+        if not zorunlu:
+            secenekler["— Yok —"] = None
+        for _, satir in kayitlar.iterrows():
+            try:
+                etiket_metin = format_str.format(**satir.to_dict())
+            except Exception:
+                etiket_metin = str(satir[id_kolon])
+            secenekler[etiket_metin] = int(satir[id_kolon])
+
+        secenek_listesi = list(secenekler.keys())
+        if not secenek_listesi:
+            st.warning(f"{etiket} için seçilebilecek kayıt bulunamadı.")
+            return None
+
+        varsayilan_index = 0
+        if mevcut_deger is not None:
+            for i, (_, v) in enumerate(secenekler.items()):
+                if v == mevcut_deger:
+                    varsayilan_index = i
+                    break
+
+        secilen = st.selectbox(etiket, secenek_listesi, index=varsayilan_index, key=key)
+        return secenekler[secilen]
+
     if tip == "text":
         return st.text_input(etiket, value=mevcut_deger if mevcut_deger is not None else "", key=key)
     if tip == "textarea":
@@ -587,6 +628,75 @@ def _alan_gir(kolon, tip, etiket, key_on_ek, mevcut_deger=None):
     return st.text_input(etiket, value=mevcut_deger if mevcut_deger is not None else "", key=key)
 
 
+def _ekle_kaydet(tablo_adi, tanim, id_kolon, degerler):
+    kolon_isimleri = ", ".join(k for k, _, _, _ in tanim["alanlar"])
+    yer_tutucular = ", ".join("?" for _ in tanim["alanlar"])
+    sorgu = f"INSERT INTO {tablo_adi} ({kolon_isimleri}) OUTPUT INSERTED.{id_kolon} VALUES ({yer_tutucular})"
+    parametreler = [degerler[k] for k, _, _, _ in tanim["alanlar"]]
+    yeni_id = calistir(sorgu, parametreler)
+    # Yeni bir öğrenci eklendiğinde, otomatik olarak "Bekliyor" durumunda
+    # bir ödeme kaydı oluştur — sekreter artık elle ödeme kaydı girmiyor.
+    if tablo_adi == "ogrenci" and yeni_id:
+        calistir(
+            """INSERT INTO odemeler
+               (odeme_tutari, tarih, odeme_sekli, odeme_durumu,
+                toplam_tutar, kalan_tutar, taksit_sayisi,
+                kalan_taksit_sayisi, ogrenci_id)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            [0, degerler.get("kayit_tarihi"), "Belirtilmedi", "Bekliyor", 0, 0, 0, 0, yeni_id],
+        )
+
+
+@st.dialog("➕ Yeni Kayıt Ekle")
+def _yeni_kayit_dialog(tablo_adi):
+    """Modal pencere olarak açılır — arka plandaki kart listesi hiç
+    kaymaz/kaydırılmaz, sadece bu pencere ekranın ortasında görünür."""
+    tanim = TABLO_TANIMLARI[tablo_adi]
+    id_kolon = tanim["id_kolon"]
+    st.markdown(f"**{tanim['isim']}**")
+    with st.form(f"form_ekle_{tablo_adi}"):
+        degerler = {}
+        for kolon, tip, etiket, iliski in tanim["alanlar"]:
+            degerler[kolon] = _alan_gir(kolon, tip, etiket, f"ekle_{tablo_adi}", None, iliski)
+        gonder = st.form_submit_button("Ekle")
+        if gonder:
+            try:
+                _ekle_kaydet(tablo_adi, tanim, id_kolon, degerler)
+                st.success("Kayıt eklendi.")
+                st.rerun()
+            except Exception as e:
+                st.error(f"Kayıt eklenemedi: {e}")
+
+
+@st.dialog("🗑️ Kayıt Sil")
+def _kayit_sil_dialog(tablo_adi):
+    """Modal pencere olarak açılır — arka plandaki kart listesi hiç
+    kaymaz/kaydırılmaz, sadece bu pencere ekranın ortasında görünür."""
+    tanim = TABLO_TANIMLARI[tablo_adi]
+    id_kolon = tanim["id_kolon"]
+    st.markdown(f"**{tanim['isim']}**")
+    gosterge_veri = listele(tanim["gosterge_sorgusu"])
+    if gosterge_veri.empty:
+        st.info("Silinecek kayıt yok.")
+    else:
+        secenekler = {
+            str(row["gosterge"]): int(row[id_kolon]) for _, row in gosterge_veri.iterrows()
+        }
+        with st.form(f"form_sil_{tablo_adi}"):
+            secilen_gosterge = st.selectbox(
+                "Silinecek kaydı seçin", list(secenekler.keys()), key=f"sil_sec_{tablo_adi}"
+            )
+            sil_gonder = st.form_submit_button("Sil")
+            if sil_gonder:
+                secilen_id = secenekler[secilen_gosterge]
+                try:
+                    calistir(f"DELETE FROM {tablo_adi} WHERE {id_kolon} = ?", [secilen_id])
+                    st.success("Kayıt silindi.")
+                    st.rerun()
+                except Exception as e:
+                    st.error(f"Silinemedi — bu kayda bağlı başka kayıtlar olabilir. ({e})")
+
+
 def genel_tablo_yonet(tablo_adi, arama_metni=""):
     tanim = TABLO_TANIMLARI[tablo_adi]
     id_kolon = tanim["id_kolon"]
@@ -596,6 +706,18 @@ def genel_tablo_yonet(tablo_adi, arama_metni=""):
         unsafe_allow_html=True,
     )
 
+    # ============ EKLE / SİL — modal pencere açan butonlar, sayfayı kaydırmaz ============
+    kol_ekle, kol_sil = st.columns(2)
+    with kol_ekle:
+        if st.button("➕ Yeni Kayıt Ekle", use_container_width=True, key=f"btn_ac_ekle_{tablo_adi}"):
+            _yeni_kayit_dialog(tablo_adi)
+    with kol_sil:
+        if st.button("🗑️ Kayıt Sil", use_container_width=True, key=f"btn_ac_sil_{tablo_adi}"):
+            _kayit_sil_dialog(tablo_adi)
+
+    st.markdown("")
+
+    # ============ KAYITLAR (kartlar) ============
     # Kart içeriği için: isimli (join'li) görünüm
     goruntu_veri = listele(tanim["goruntuleme_sorgusu"])
     # Güncelleme formu ve ID eşleştirme için: ham veri (id dahil, tüm sütunlar)
@@ -627,85 +749,28 @@ def genel_tablo_yonet(tablo_adi, arama_metni=""):
                             deger_str = "—" if deger is None or str(deger).lower() == "nan" else deger
                             st.markdown(f"**{sutun_adi}:** {deger_str}")
 
-                        duzenle_key = f"{tablo_adi}_duzenle_{kayit_id}"
-                        if st.button("✏️ Güncelle", key=f"btn_duzenle_{tablo_adi}_{kayit_id}", use_container_width=True):
-                            st.session_state[duzenle_key] = not st.session_state.get(duzenle_key, False)
-                            st.session_state["admin_scroll_hedef"] = f"kart_{tablo_adi}_{kayit_id}"
-                            st.rerun()
-
-                        if st.session_state.get(duzenle_key, False):
+                        with st.popover("✏️ Güncelle", use_container_width=True):
                             with st.form(f"form_guncelle_{tablo_adi}_{kayit_id}"):
                                 yeni_degerler = {}
-                                for kolon, tip, etiket in tanim["alanlar"]:
+                                for kolon, tip, etiket, iliski in tanim["alanlar"]:
                                     mevcut_deger = ham[kolon] if kolon in ham.index else None
                                     yeni_degerler[kolon] = _alan_gir(
-                                        kolon, tip, etiket, f"guncelle_{tablo_adi}_{kayit_id}", mevcut_deger
+                                        kolon, tip, etiket, f"guncelle_{tablo_adi}_{kayit_id}",
+                                        mevcut_deger, iliski,
                                     )
                                 kaydet = st.form_submit_button("Kaydet")
                                 if kaydet:
-                                    set_ifadesi = ", ".join(f"{k}=?" for k, _, _ in tanim["alanlar"])
-                                    parametreler = [yeni_degerler[k] for k, _, _ in tanim["alanlar"]] + [kayit_id]
+                                    set_ifadesi = ", ".join(f"{k}=?" for k, _, _, _ in tanim["alanlar"])
+                                    parametreler = [yeni_degerler[k] for k, _, _, _ in tanim["alanlar"]] + [kayit_id]
                                     try:
                                         calistir(
                                             f"UPDATE {tablo_adi} SET {set_ifadesi} WHERE {id_kolon}=?",
                                             parametreler,
                                         )
-                                        st.session_state[duzenle_key] = False
-                                        st.session_state["admin_scroll_hedef"] = f"kart_{tablo_adi}_{kayit_id}"
                                         st.success("Güncellendi.")
                                         st.rerun()
                                     except Exception as e:
                                         st.error(f"Güncellenemedi: {e}")
-
-    st.markdown("")
-    kol_ekle, kol_sil = st.columns(2)
-
-    with kol_ekle:
-        with st.container(key=f"ekle_bolumu_{tablo_adi}"):
-            with st.expander("➕ Yeni Kayıt Ekle"):
-                with st.form(f"form_ekle_{tablo_adi}"):
-                    degerler = {}
-                    for kolon, tip, etiket in tanim["alanlar"]:
-                        degerler[kolon] = _alan_gir(kolon, tip, etiket, f"ekle_{tablo_adi}")
-                    gonder = st.form_submit_button("Ekle")
-                    if gonder:
-                        kolon_isimleri = ", ".join(k for k, _, _ in tanim["alanlar"])
-                        yer_tutucular = ", ".join("?" for _ in tanim["alanlar"])
-                        sorgu = f"INSERT INTO {tablo_adi} ({kolon_isimleri}) VALUES ({yer_tutucular})"
-                        parametreler = [degerler[k] for k, _, _ in tanim["alanlar"]]
-                        try:
-                            calistir(sorgu, parametreler)
-                            st.session_state["admin_scroll_hedef"] = f"ekle_bolumu_{tablo_adi}"
-                            st.success("Kayıt eklendi.")
-                            st.rerun()
-                        except Exception as e:
-                            st.error(f"Kayıt eklenemedi: {e}")
-
-    with kol_sil:
-        with st.container(key=f"sil_bolumu_{tablo_adi}"):
-            with st.expander("🗑️ Kayıt Sil"):
-                gosterge_veri = listele(tanim["gosterge_sorgusu"])
-                if gosterge_veri.empty:
-                    st.info("Silinecek kayıt yok.")
-                else:
-                    secenekler = {
-                        str(row["gosterge"]): int(row[id_kolon])
-                        for _, row in gosterge_veri.iterrows()
-                    }
-                    with st.form(f"form_sil_{tablo_adi}"):
-                        secilen_gosterge = st.selectbox(
-                            "Silinecek kaydı seçin", list(secenekler.keys()), key=f"sil_sec_{tablo_adi}"
-                        )
-                        sil_gonder = st.form_submit_button("Sil")
-                        if sil_gonder:
-                            secilen_id = secenekler[secilen_gosterge]
-                            try:
-                                calistir(f"DELETE FROM {tablo_adi} WHERE {id_kolon} = ?", [secilen_id])
-                                st.session_state["admin_scroll_hedef"] = f"sil_bolumu_{tablo_adi}"
-                                st.success("Kayıt silindi.")
-                                st.rerun()
-                            except Exception as e:
-                                st.error(f"Silinemedi — bu kayda bağlı başka kayıtlar olabilir. ({e})")
 
     # Scroll: bir işlem sonrası ilgili bölüme kaydır (deneysel — Streamlit'in
     # resmi olarak desteklemediği bir JavaScript tekniği, garantili değildir)

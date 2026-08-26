@@ -165,7 +165,7 @@ def veli_paneli_goster():
     # ============================================================
     if aktif_bolum == "bilgilerim":
         st.markdown("### 👤 Bilgilerim")
-        col_bos1, col_kart, col_bos2 = st.columns([1, 2, 1])
+        col_kart, col_bos = st.columns([2, 3])
         with col_kart:
             with st.container(border=True, key="kart_bilgilerim"):
                 st.markdown(f"**Ad Soyad:** {ad} {soyad}")

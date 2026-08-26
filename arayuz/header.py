@@ -1,18 +1,5 @@
 """
 Üst menü (header). Sadece header'a ÖZEL kod ve stiller burada.
-
-Giriş yapılmamışsa (ya da admin girişse — admin kendi ayrı arayüzünü
-kullanır, bu header hiç görünmez), normal halka açık site menüsü.
-
-Giriş yapılmışsa (veli/öğretmen), header o role özgü bir navigasyon
-menüsüne dönüşür: logo yerine "Hoş geldiniz, Ad Soyad!" yazısı, ve
-Ana Sayfa/Hakkımızda gibi linkler yerine role özgü bölüm linkleri
-(Çocuklarım, Ödemeler, vb.) — tıklanan bölüm session_state üzerinden
-ilgili panele (veli.py / ogretmen.py) iletilir.
-
-Not: Eski "kullanıcı adı + dropdown" mekanizması TAMAMEN kaldırıldı —
-Bilgilerim ve Şifre Değiştir artık doğrudan görünür linkler, dropdown
-olmadığı için header'ın "büyüme" sorunu da kökünden ortadan kalkıyor.
 """
 
 import streamlit as st
@@ -20,8 +7,7 @@ from veritabani import listele
 
 HEADER_CSS = """
 <style>
-    /* Streamlit'in üst araç çubuğunu (Deploy/⋮) tamamen gizle — admin
-       panelinde bulup kalıcı olarak kaydettiğimiz aynı çözüm */
+    /* Streamlit'in üst araç çubuğunu gizle */
     header[data-testid="stHeader"],
     div[data-testid="stToolbar"],
     div[data-testid="stDecoration"],
@@ -33,8 +19,7 @@ HEADER_CSS = """
         min-height: 0 !important;
     }
 
-    /* Ana kutunun boşluğunu tüm yönlerden sıfırla — header'ın tam yukarıdan
-       ve kenardan kenara başlaması için */
+    /* Ana kutu boşluk sıfırlama */
     div[data-testid="stMainBlockContainer"],
     div[data-testid="stAppViewBlockContainer"],
     .main .block-container,
@@ -57,56 +42,111 @@ HEADER_CSS = """
         transform: translateX(-50%);
     }
     .st-key-site_header .logo-yazi {
-        font-size: 1.75rem;
+        font-size: __LOGO_FONT_BOYUTU__;
         font-weight: 700;
         color: #D97B3D;
-        padding-top: 0.6rem;
+        padding-top: 0;
         white-space: nowrap;
     }
+    /* Logo (Hoş geldiniz) sabit kalır — sağdaki grup buna göre dikey
+       ortalanır. Hem üst düzey satıra hem panel_sag_grup'un kendi
+       satırına aynı hizalamayı garanti altına alıyoruz. */
+    .st-key-site_header div[data-testid="stHorizontalBlock"] {
+        align-items: center !important;
+    }
+    /* Sütunların kendisini de flex yapıp içeriklerini dikey ortalıyoruz
+       — sadece üst satırın hizalanması yetmedi, her sütunun kendi
+       içeriği de "Hoş geldiniz" yazısının tam ortasına gelmeli. */
+    .st-key-site_header div[data-testid="column"],
+    .st-key-site_header div[data-testid="stColumn"] {
+        display: flex !important;
+        align-items: center !important;
+    }
 
-    /* Nav linkleri: tek satırda, sağa yaslı, buton görünümü kaldırılmış */
+    /* --- ANA SAYFA: İlk attığın orijinal CSS --- */
     div.st-key-nav_linkler {
         display: flex !important;
         flex-direction: row !important;
         align-items: center !important;
         justify-content: flex-end !important;
-        gap: 0.5rem !important;
+        gap: 0.05rem !important;
         flex-wrap: nowrap !important;
         width: 100% !important;
+        margin-top: 0.6rem !important; /* Sadece nav linkleri aşağı kayar, logo etkilenmez */
     }
-    div.st-key-nav_linkler > div {
-        width: auto !important;
-        flex: 0 0 auto !important;
-    }
+    div.st-key-nav_linkler > div,
     div.st-key-nav_linkler div[data-testid="stElementContainer"] {
         width: auto !important;
         flex: 0 0 auto !important;
     }
+
+    /* --- ROL PANELİ: Linkler ve Butonlar Arasında Eşit Boşluk --- */
+    div.st-key-panel_sag_grup {
+        display: flex !important;
+        flex-direction: row !important;
+        align-items: center !important;
+        justify-content: flex-end !important;
+        gap: 0.8rem !important; /* Tüm öğeler arasında eşit boşluk */
+        width: 100% !important;
+        flex-wrap: nowrap !important;
+        margin-top: 0.6rem !important; /* Sadece bu grup aşağı kayar, logo etkilenmez */
+    }
+    div.st-key-panel_sag_grup > div,
+    div.st-key-panel_sag_grup div[data-testid="stElementContainer"] {
+        width: auto !important;
+        flex: 0 0 auto !important;
+    }
+
+    /* Buton ve Link Ortak Stilleri */
     .st-key-nav_linkler .stButton button,
     .st-key-nav_linkler .stButton button p,
-    .st-key-nav_linkler .stButton button div {
+    .st-key-nav_linkler .stButton button div,
+    .st-key-panel_sag_grup .stButton button,
+    .st-key-panel_sag_grup .stButton button p,
+    .st-key-panel_sag_grup .stButton button div {
         background-color: transparent;
         color: #3D3D3D;
         border: none;
         font-weight: 600 !important;
-        font-size: 1.1rem !important;
+        font-size: __NAV_FONT_BOYUTU__ !important;
         box-shadow: none;
-        padding: 0.6rem 0.9rem;
+        padding: 0.3rem 0.2rem;
         border-bottom: 2px solid transparent;
         border-radius: 0;
         white-space: nowrap;
     }
-    .st-key-nav_linkler .stButton button:hover {
+    .st-key-nav_linkler .stButton button:hover,
+    .st-key-panel_sag_grup .stButton button:hover {
         color: #D97B3D;
         border-bottom: 2px solid #D97B3D;
         background-color: transparent;
     }
-    /* Aktif (seçili) bölüm linki */
-    .st-key-nav_linkler .st-key-nav_aktif .stButton button {
+    .st-key-panel_sag_grup .st-key-nav_aktif .stButton button {
         color: #D97B3D;
         border-bottom: 2px solid #D97B3D;
     }
 
+    /* Şifre Butonu — daha kompakt, kare bir ikon butonu gibi */
+    .st-key-panel_sag_grup .st-key-btn_sifre_degistir button,
+    .st-key-btn_sifre_degistir button {
+        border-radius: 6px !important;
+        font-size: 0.8rem !important;
+        padding: 0.2rem 0.4rem !important;
+        min-width: 0 !important;
+        width: auto !important;
+        border: 1px solid #E0E0E0 !important;
+    }
+    .st-key-panel_sag_grup .st-key-btn_sifre_degistir button p,
+    .st-key-panel_sag_grup .st-key-btn_sifre_degistir button div,
+    .st-key-btn_sifre_degistir button p,
+    .st-key-btn_sifre_degistir button div {
+        font-size: 0.8rem !important;
+        border: none !important;
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+
+    /* Çıkış Yap / Giriş Yap Butonu */
     .st-key-btn_giris button,
     .st-key-btn_giris button p,
     .st-key-btn_giris button div {
@@ -114,9 +154,12 @@ HEADER_CSS = """
         color: #3D3D3D !important;
         border-radius: 8px !important;
         font-weight: 600 !important;
-        font-size: 0.95rem !important;
+        font-size: __GIRIS_FONT_BOYUTU__ !important;
         border: none !important;
-        padding: 0.45rem 0.9rem !important;
+        outline: none !important;
+        box-shadow: none !important;
+        padding: __GIRIS_PADDING__ !important;
+        white-space: nowrap !important;
     }
     .st-key-btn_giris button:hover {
         background-color: #E17B8C !important;
@@ -128,7 +171,19 @@ HEADER_CSS = """
 
 
 def header_yukle():
-    st.markdown(HEADER_CSS, unsafe_allow_html=True)
+    rol = (st.session_state.get("rol_adi") or "").strip().lower()
+    girisli = rol in ("ogretmen", "veli", "personel")
+
+    nav_font_boyutu = "0.85rem" if girisli else "1.1rem"
+    giris_font_boyutu = "0.72rem" if girisli else "0.95rem"
+    giris_padding = "0.25rem 0.55rem" if girisli else "0.45rem 0.9rem"
+    logo_font_boyutu = "1.25rem" if girisli else "1.75rem"
+
+    css = HEADER_CSS.replace("__NAV_FONT_BOYUTU__", nav_font_boyutu)
+    css = css.replace("__GIRIS_FONT_BOYUTU__", giris_font_boyutu)
+    css = css.replace("__GIRIS_PADDING__", giris_padding)
+    css = css.replace("__LOGO_FONT_BOYUTU__", logo_font_boyutu)
+    st.markdown(css, unsafe_allow_html=True)
 
 
 def git(sayfa_adi):
@@ -137,9 +192,6 @@ def git(sayfa_adi):
 
 
 def _rol_ozel_menu():
-    """Giriş yapan veli/öğretmen için (rol, ad_soyad, bölüm_listesi) döndürür.
-    Giriş yapılmamışsa ya da admin ise (None, None, None) döner — o durumda
-    normal halka açık site menüsü gösterilir."""
     rol = (st.session_state.get("rol_adi") or "").strip().lower()
 
     if rol == "veli":
@@ -177,29 +229,51 @@ def _rol_ozel_menu():
         ]
         return "ogretmen", ad_soyad, bolumler
 
+    if rol == "personel":
+        personel_id = st.session_state.get("personel_id")
+        personel_bilgi = (
+            listele("SELECT ad, soyad, pozisyon FROM personel WHERE personel_id = ?", [personel_id])
+            if personel_id else None
+        )
+        if personel_bilgi is not None and not personel_bilgi.empty:
+            ad_soyad = f"{personel_bilgi.iloc[0]['ad']} {personel_bilgi.iloc[0]['soyad']}"
+            pozisyon = (personel_bilgi.iloc[0]["pozisyon"] or "").strip().lower()
+        else:
+            ad_soyad = st.session_state.get("kullanici_adi", "")
+            pozisyon = ""
+
+        bolumler = []
+        if any(k in pozisyon for k in ["temizlik"]):
+            bolumler.append(("temizlik_listesi", "🧹 Temizlik Listesi"))
+        if any(k in pozisyon for k in ["aşçı", "asci", "mutfak", "yemek"]):
+            bolumler.append(("yemek_listesi", "🍴 Yemek Listesi"))
+        if any(k in pozisyon for k in ["sağlık", "saglik", "idari", "sekreter"]):
+            bolumler.append(("saglik_listesi", "🩺 Sağlık Takibi"))
+        if any(k in pozisyon for k in ["sekreter", "idari"]):
+            bolumler.append(("odemeler", "💳 Ödemeler"))
+        bolumler.append(("bilgilerim", "👤 Bilgilerim"))
+        return "personel", ad_soyad, bolumler
+
     return None, None, None
 
 
 def header():
-    """
-    Gerçek Streamlit butonlarından oluşan üst menü (sayfa hiç yenilenmeden çalışır).
-    """
     rol, ad_soyad, bolumler = _rol_ozel_menu()
 
     with st.container(key="site_header"):
-        kol_logo, kol_bosluk, kol_nav, kol_giris = st.columns([2.2, 2.0, 3.5, 1.8])
+        if rol:
+            # Sola: Hoş geldiniz | Sağa: Tüm linkler + butonlar tek blokta
+            kol_logo, kol_sag = st.columns([2.5, 7.5])
 
-        with kol_logo:
-            if rol:
+            with kol_logo:
                 st.markdown(f'<div class="logo-yazi">👋 Hoş geldiniz, {ad_soyad}!</div>', unsafe_allow_html=True)
-            else:
-                st.markdown('<div class="logo-yazi">🌈 Minik Adımlar Anaokulu</div>', unsafe_allow_html=True)
 
-        with kol_nav:
-            with st.container(key="nav_linkler"):
-                if rol:
+            with kol_sag:
+                with st.container(key="panel_sag_grup"):
+                    # 1. Menü Linkleri
                     aktif_key = f"{rol}_aktif_bolum"
-                    if aktif_key not in st.session_state:
+                    gecerli_bolumler = [b[0] for b in bolumler]
+                    if aktif_key not in st.session_state or st.session_state[aktif_key] not in gecerli_bolumler:
                         st.session_state[aktif_key] = bolumler[0][0]
                     for bolum_key, etiket in bolumler:
                         aktif = st.session_state[aktif_key] == bolum_key
@@ -208,7 +282,28 @@ def header():
                             if st.button(etiket, key=f"nav_{bolum_key}"):
                                 st.session_state[aktif_key] = bolum_key
                                 st.rerun()
-                else:
+
+                    # 2. Şifre Değiştir Butonu
+                    with st.container(key="btn_sifre_kutu"):
+                        if st.button("🔑", key="btn_sifre_degistir", help="Şifre Değiştir"):
+                            git("sifre_degistir")
+
+                    # 3. Çıkış Yap Butonu
+                    with st.container(key="btn_cikis_kutu"):
+                        if st.button("🚪 Çıkış Yap", key="btn_giris"):
+                            st.session_state.giris_yapildi = False
+                            st.session_state.rol_adi = None
+                            st.session_state.kullanici_adi = None
+                            git("anasayfa")
+        else:
+            # Ana sayfa: İlk attığın 4 kolonlu orijinal düzen
+            kol_logo, kol_bosluk, kol_nav, kol_giris = st.columns([2.2, 2.0, 3.5, 1.8])
+
+            with kol_logo:
+                st.markdown('<div class="logo-yazi">🌈 Minik Adımlar Anaokulu</div>', unsafe_allow_html=True)
+
+            with kol_nav:
+                with st.container(key="nav_linkler"):
                     if st.button("Ana Sayfa", key="nav_anasayfa"):
                         git("anasayfa")
                     if st.button("Hakkımızda", key="nav_hakkimizda"):
@@ -218,18 +313,6 @@ def header():
                     if st.button("İletişim", key="nav_iletisim"):
                         git("iletisim")
 
-        with kol_giris:
-            if st.session_state.get("giris_yapildi"):
-                kol_sifre, kol_cikis = st.columns([1, 2])
-                with kol_sifre:
-                    if st.button("🔑", key="btn_sifre_degistir", help="Şifre Değiştir"):
-                        git("sifre_degistir")
-                with kol_cikis:
-                    if st.button("🚪 Çıkış Yap", key="btn_giris"):
-                        st.session_state.giris_yapildi = False
-                        st.session_state.rol_adi = None
-                        st.session_state.kullanici_adi = None
-                        git("anasayfa")
-            else:
+            with kol_giris:
                 if st.button("🔑 Giriş Yap", key="btn_giris"):
                     git("giris")

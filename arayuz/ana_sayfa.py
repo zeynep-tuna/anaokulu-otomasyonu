@@ -17,6 +17,7 @@ from sifre_degistir import sifre_degistir_stilleri_yukle, sifre_degistir_goster
 from admin import admin_stilleri_yukle, admin_paneli_goster
 from ogretmen import ogretmen_paneli_goster
 from veli import veli_paneli_goster
+from personel import personel_paneli_goster
 
 st.set_page_config(page_title="Minik Adımlar Anaokulu", page_icon="🌈", layout="wide")
 
@@ -146,13 +147,7 @@ else:
                 veli_paneli_goster()
 
             elif rol == "personel":
-                st.markdown(f"""
-                <div class="baslik-kutu">
-                    <h1>🧹 Personel Paneli</h1>
-                    <p>Hoş geldiniz, {kullanici_adi}!</p>
-                </div>
-                """, unsafe_allow_html=True)
-                st.info("Personel paneli (temizlik, yemek listesi) ileride buraya eklenecek.")
+                personel_paneli_goster()
 
             else:
                 st.warning(f"'{st.session_state.rol_adi}' rolü için henüz bir panel tanımlanmadı.")
