@@ -35,14 +35,14 @@ PERSONEL_CSS = """
         gap: 0.4rem;
         margin-bottom: 0.8rem;
     }
-    .st-key-temizlik_filtre_kutu,
+    .st-key-temizlik_filtre_kutu div[data-testid="stElementContainer"],
     .st-key-odeme_filtre_kutu div[data-testid="stElementContainer"],
-    .st-key-temizlik_filtre_kutu,
+    .st-key-temizlik_filtre_kutu div[data-testid="stVerticalBlock"],
     .st-key-odeme_filtre_kutu div[data-testid="stVerticalBlock"] {
         width: auto !important;
         flex: 0 0 auto !important;
     }
-    .st-key-temizlik_filtre_kutu,
+    .st-key-temizlik_filtre_kutu .stButton button,
     .st-key-odeme_filtre_kutu .stButton button {
         border-radius: 9999px !important;
         font-weight: 600 !important;
@@ -50,18 +50,18 @@ PERSONEL_CSS = """
         padding: 0.3rem 0.9rem !important;
         white-space: nowrap;
     }
-    .st-key-temizlik_filtre_kutu,
+    .st-key-temizlik_filtre_kutu .stButton button[kind="secondary"],
     .st-key-odeme_filtre_kutu .stButton button[kind="secondary"] {
         background-color: #FFF6EC !important;
         border: 1px solid #F0E4D8 !important;
         color: #8A8175 !important;
     }
-    .st-key-temizlik_filtre_kutu,
+    .st-key-temizlik_filtre_kutu .stButton button[kind="secondary"]:hover,
     .st-key-odeme_filtre_kutu .stButton button[kind="secondary"]:hover {
         border-color: #FFB86B !important;
         color: #D97B3D !important;
     }
-    .st-key-temizlik_filtre_kutu,
+    .st-key-temizlik_filtre_kutu .stButton button[kind="primary"],
     .st-key-odeme_filtre_kutu .stButton button[kind="primary"] {
         background-color: #D97B3D !important;
         border: 1px solid #D97B3D !important;

@@ -15,6 +15,8 @@ ham ID yazmak yerine isimden seçer, opsiyonel ilişkilerde "— Yok —" seçen
 gerçek NULL gönderir (yanlışlıkla geçersiz bir ID/0 girilmesini önler).
 """
 
+import datetime
+import time
 import streamlit as st
 from veritabani import listele, calistir
 
@@ -560,6 +562,25 @@ TABLO_TANIMLARI = {
     },
 }
 
+# Bir kayıt silinince, ona doğrudan bağlı ("yaprak" niteliğindeki, başka
+# hiçbir tabloya referans vermeyen) kayıtların da otomatik silinmesi için
+# harita. Sadece öğrenci ve personel için tanımlı — veli/öğretmen/sınıf gibi
+# daha "üst" kayıtlar hâlâ korumalı (bağlı kaydı varsa silinemez), çünkü
+# onları silmek daha büyük, zincirleme bir etkiye yol açabilir.
+CASCADE_SILME_HARITASI = {
+    "ogrenci": [
+        ("yoklama", "ogrenci_id"),
+        ("odemeler", "ogrenci_id"),
+        ("saglik_listesi", "ogrenci_id"),
+    ],
+    "personel": [
+        ("yemek_listesi", "personel_id"),
+        ("temizlik_listesi", "personel_id"),
+        ("odemeler", "personel_id"),
+        ("saglik_listesi", "personel_id"),
+    ],
+}
+
 
 def _alan_gir(kolon, tip, etiket, key_on_ek, mevcut_deger=None, iliski=None):
     """mevcut_deger verilmezse (None) boş bir 'Yeni Kayıt Ekle' alanı,
@@ -606,9 +627,31 @@ def _alan_gir(kolon, tip, etiket, key_on_ek, mevcut_deger=None, iliski=None):
     if tip == "textarea":
         return st.text_area(etiket, value=mevcut_deger if mevcut_deger is not None else "", key=key)
     if tip == "date":
+        # Takvim yerine, sadece sayı kabul eden 3 ayrı kutu: Gün / Ay / Yıl —
+        # takvimde yıl/ay başlığından hızlı geçiş güvenilir çalışmadığı,
+        # serbest metin kutusu ise harf girişine izin verdiği için tercih edildi.
+        bugun = datetime.date.today()
+        varsayilan_gun, varsayilan_ay, varsayilan_yil = bugun.day, bugun.month, bugun.year
         if mevcut_deger is not None:
-            return st.date_input(etiket, value=mevcut_deger, key=key)
-        return st.date_input(etiket, key=key)
+            try:
+                varsayilan_gun = mevcut_deger.day
+                varsayilan_ay = mevcut_deger.month
+                varsayilan_yil = mevcut_deger.year
+            except Exception:
+                pass
+        st.markdown(f"**{etiket}**")
+        c_gun, c_ay, c_yil = st.columns(3)
+        with c_gun:
+            gun = st.number_input("Gün", min_value=1, max_value=31, value=varsayilan_gun, step=1, key=f"{key}_gun")
+        with c_ay:
+            ay = st.number_input("Ay", min_value=1, max_value=12, value=varsayilan_ay, step=1, key=f"{key}_ay")
+        with c_yil:
+            yil = st.number_input("Yıl", min_value=1900, max_value=2100, value=varsayilan_yil, step=1, key=f"{key}_yil")
+        try:
+            return datetime.date(int(yil), int(ay), int(gun))
+        except ValueError:
+            st.error(f"{etiket}: Geçersiz tarih (bu ay bu kadar gün içermiyor).")
+            return None
     if tip == "time":
         if mevcut_deger is not None:
             return st.time_input(etiket, value=mevcut_deger, key=key)
@@ -690,11 +733,54 @@ def _kayit_sil_dialog(tablo_adi):
             if sil_gonder:
                 secilen_id = secenekler[secilen_gosterge]
                 try:
+                    # Önce (varsa) doğrudan bağlı yaprak kayıtları temizle
+                    for bagli_tablo, sutun in CASCADE_SILME_HARITASI.get(tablo_adi, []):
+                        calistir(f"DELETE FROM {bagli_tablo} WHERE {sutun} = ?", [secilen_id])
                     calistir(f"DELETE FROM {tablo_adi} WHERE {id_kolon} = ?", [secilen_id])
                     st.success("Kayıt silindi.")
                     st.rerun()
                 except Exception as e:
                     st.error(f"Silinemedi — bu kayda bağlı başka kayıtlar olabilir. ({e})")
+
+
+@st.dialog("✏️ Kaydı Güncelle")
+def _kayit_guncelle_dialog(tablo_adi, kayit_id, ham):
+    """Modal pencere olarak açılır — popover'ın aksine, formun Kaydet
+    butonuna basılıp st.rerun() çağrıldığında kesinlikle kapanır."""
+    tanim = TABLO_TANIMLARI[tablo_adi]
+    id_kolon = tanim["id_kolon"]
+    st.markdown(f"**{tanim['isim']}**")
+    with st.form(f"form_guncelle_{tablo_adi}_{kayit_id}"):
+        yeni_degerler = {}
+        for kolon, tip, etiket, iliski in tanim["alanlar"]:
+            mevcut_deger = ham[kolon] if kolon in ham.index else None
+            yeni_degerler[kolon] = _alan_gir(
+                kolon, tip, etiket, f"guncelle_{tablo_adi}_{kayit_id}",
+                mevcut_deger, iliski,
+            )
+        kaydet = st.form_submit_button("Kaydet")
+        if kaydet:
+            # "password" tipindeki alanlar (şifre), güncelleme formunda
+            # güvenlik amacıyla her zaman boş açılır — mevcut şifre ekranda
+            # gösterilmez. Kullanıcı yeni bir şifre yazmadan Kaydet'e
+            # basarsa, o boş değeri veritabanına yazıp eski şifreyi SİLMEK
+            # yerine, o alanı güncellemeden (dokunmadan) atlıyoruz.
+            guncellenecek_alanlar = [
+                (k, t) for k, t, _, _ in tanim["alanlar"]
+                if not (t == "password" and not str(yeni_degerler[k]).strip())
+            ]
+            set_ifadesi = ", ".join(f"{k}=?" for k, _ in guncellenecek_alanlar)
+            parametreler = [yeni_degerler[k] for k, _ in guncellenecek_alanlar] + [kayit_id]
+            try:
+                calistir(
+                    f"UPDATE {tablo_adi} SET {set_ifadesi} WHERE {id_kolon}=?",
+                    parametreler,
+                )
+                st.success("Güncellendi.")
+                time.sleep(1)
+                st.rerun()
+            except Exception as e:
+                st.error(f"Güncellenemedi: {e}")
 
 
 def genel_tablo_yonet(tablo_adi, arama_metni=""):
@@ -749,28 +835,8 @@ def genel_tablo_yonet(tablo_adi, arama_metni=""):
                             deger_str = "—" if deger is None or str(deger).lower() == "nan" else deger
                             st.markdown(f"**{sutun_adi}:** {deger_str}")
 
-                        with st.popover("✏️ Güncelle", use_container_width=True):
-                            with st.form(f"form_guncelle_{tablo_adi}_{kayit_id}"):
-                                yeni_degerler = {}
-                                for kolon, tip, etiket, iliski in tanim["alanlar"]:
-                                    mevcut_deger = ham[kolon] if kolon in ham.index else None
-                                    yeni_degerler[kolon] = _alan_gir(
-                                        kolon, tip, etiket, f"guncelle_{tablo_adi}_{kayit_id}",
-                                        mevcut_deger, iliski,
-                                    )
-                                kaydet = st.form_submit_button("Kaydet")
-                                if kaydet:
-                                    set_ifadesi = ", ".join(f"{k}=?" for k, _, _, _ in tanim["alanlar"])
-                                    parametreler = [yeni_degerler[k] for k, _, _, _ in tanim["alanlar"]] + [kayit_id]
-                                    try:
-                                        calistir(
-                                            f"UPDATE {tablo_adi} SET {set_ifadesi} WHERE {id_kolon}=?",
-                                            parametreler,
-                                        )
-                                        st.success("Güncellendi.")
-                                        st.rerun()
-                                    except Exception as e:
-                                        st.error(f"Güncellenemedi: {e}")
+                        if st.button("✏️ Güncelle", key=f"btn_guncelle_{tablo_adi}_{kayit_id}", use_container_width=True):
+                            _kayit_guncelle_dialog(tablo_adi, kayit_id, ham)
 
     # Scroll: bir işlem sonrası ilgili bölüme kaydır (deneysel — Streamlit'in
     # resmi olarak desteklemediği bir JavaScript tekniği, garantili değildir)

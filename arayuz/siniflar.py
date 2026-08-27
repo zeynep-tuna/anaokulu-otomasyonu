@@ -37,8 +37,8 @@ def _sinif_css(sinif_id, renk):
             background: {renk['arka_plan']} !important;
             border: 2px solid {renk['kenar']} !important;
             border-radius: 18px !important;
-            aspect-ratio: 70 / 30 !important;
-            max-width: 500px !important;
+            aspect-ratio: 4 / 3 !important;
+            min-height: 280px !important;
             width: 100% !important;
             margin: 0 auto !important;
             display: flex !important;
@@ -48,8 +48,8 @@ def _sinif_css(sinif_id, renk):
             white-space: pre-line !important;
             color: {renk['vurgu']} !important;
             font-weight: 700 !important;
-            font-size: 1.2rem !important;
-            line-height: 1.7 !important;
+            font-size: 1.3rem !important;
+            line-height: 1.9 !important;
             transition: transform 0.2s ease, box-shadow 0.2s ease !important;
         }}
         .st-key-kart_{sinif_id} button:hover {{
@@ -58,11 +58,12 @@ def _sinif_css(sinif_id, renk):
             border-color: {renk['vurgu']} !important;
             color: {renk['vurgu']} !important;
         }}
+        .st-key-kart_{sinif_id} button *,
         .st-key-kart_{sinif_id} button p {{
-            font-size: inherit !important;
+            font-size: 1.3rem !important;
         }}
         .st-key-kart_{sinif_id} button::first-line {{
-            font-size: 3rem !important;
+            font-size: 4.3rem !important;
         }}
     </style>
     """
@@ -121,11 +122,14 @@ def siniflar_goster():
         st.info("Henüz sınıf bilgisi eklenmemiş.")
         return
 
-    kolonlar = st.columns(len(siniflar_veri), gap="small")
-    for kolon, (_, satir) in zip(kolonlar, siniflar_veri.iterrows()):
-        sinif_id = satir["sinif_id"]
-        etiket = f"🎨\n{satir['sinif_adi']} Sınıfı\n{satir['yas_grubu']} · Kapasite: {satir['kapasite']}"
-        with kolon:
-            with st.container(key=f"kart_{sinif_id}"):
-                if st.button(etiket, key=f"btn_{sinif_id}"):
-                    sinif_detay_goster(satir['sinif_adi'], satir['yas_grubu'], satir['kapasite'], sinif_id)
+    satirlar = list(siniflar_veri.iterrows())
+    for i in range(0, len(satirlar), 3):
+        parca = satirlar[i:i + 3]
+        kolonlar = st.columns(3, gap="small")
+        for kolon, (_, satir) in zip(kolonlar, parca):
+            sinif_id = satir["sinif_id"]
+            etiket = f"🎨\n{satir['sinif_adi']} Sınıfı\n{satir['yas_grubu']} · Kapasite: {satir['kapasite']}"
+            with kolon:
+                with st.container(key=f"kart_{sinif_id}"):
+                    if st.button(etiket, key=f"btn_{sinif_id}"):
+                        sinif_detay_goster(satir['sinif_adi'], satir['yas_grubu'], satir['kapasite'], sinif_id)

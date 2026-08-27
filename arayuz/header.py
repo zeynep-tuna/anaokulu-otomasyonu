@@ -32,9 +32,9 @@ HEADER_CSS = """
     .st-key-site_header {
         background-color: #FFFFFF;
         box-shadow: 0 2px 10px rgba(0,0,0,0.08);
-        padding: 0.55rem 3.5rem 0.4rem 3.5rem !important;
+        padding: 0.55rem 3.5rem 0.2rem 3.5rem !important;
         margin-bottom: 1.5rem;
-        margin-top: -9rem !important;
+        margin-top: -10rem !important;
         position: relative;
         z-index: 9999;
         width: 100vw !important;
@@ -110,7 +110,7 @@ HEADER_CSS = """
         font-weight: 600 !important;
         font-size: __NAV_FONT_BOYUTU__ !important;
         box-shadow: none;
-        padding: 0.3rem 0.2rem;
+        padding: 0.5rem 0.3rem !important;
         border-bottom: 2px solid transparent;
         border-radius: 0;
         white-space: nowrap;
@@ -174,7 +174,7 @@ def header_yukle():
     rol = (st.session_state.get("rol_adi") or "").strip().lower()
     girisli = rol in ("ogretmen", "veli", "personel")
 
-    nav_font_boyutu = "0.85rem" if girisli else "1.1rem"
+    nav_font_boyutu = "1.05rem" if girisli else "1.1rem"
     giris_font_boyutu = "0.72rem" if girisli else "0.95rem"
     giris_padding = "0.25rem 0.55rem" if girisli else "0.45rem 0.9rem"
     logo_font_boyutu = "1.25rem" if girisli else "1.75rem"

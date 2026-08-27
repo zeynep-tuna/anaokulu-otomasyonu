@@ -208,14 +208,42 @@ def ogretmen_paneli_goster():
             st.info("Sınıfınızda henüz kayıtlı öğrenci yok.")
         else:
             with st.container(key="yoklama_tarih_kutu"):
-                secilen_tarih = st.date_input("Tarih", value=date.today(), key="yoklama_tarih")
+                bugun = date.today()
+                st.markdown("**Tarih**")
+                c_gun, c_ay, c_yil = st.columns(3)
+                with c_gun:
+                    gun = st.number_input("Gün", min_value=1, max_value=31, value=bugun.day, step=1, key="yoklama_gun")
+                with c_ay:
+                    ay = st.number_input("Ay", min_value=1, max_value=12, value=bugun.month, step=1, key="yoklama_ay")
+                with c_yil:
+                    yil = st.number_input("Yıl", min_value=1900, max_value=2100, value=bugun.year, step=1, key="yoklama_yil")
+                try:
+                    secilen_tarih = date(int(yil), int(ay), int(gun))
+                except ValueError:
+                    st.error("Geçersiz tarih (bu ay bu kadar gün içermiyor).")
+                    secilen_tarih = bugun
             st.markdown("")
+
+            # Seçilen tarih için, veritabanındaki mevcut yoklama kayıtlarını
+            # önceden çek — böylece admin panelinden yapılan güncellemeler
+            # (veya daha önceki bir oturumda kaydedilen veriler) doğru
+            # yansır; her öğrenci varsayılan olarak hep "var" görünmez.
+            mevcut_yoklamalar = listele(
+                "SELECT ogrenci_id, durum FROM yoklama WHERE tarih = ?", [secilen_tarih]
+            )
+            mevcut_durum_haritasi = {
+                int(row["ogrenci_id"]): str(row["durum"]).strip().lower()
+                for _, row in mevcut_yoklamalar.iterrows()
+            }
+            # Tarih değişince eski (başka güne ait) session_state
+            # değerleriyle karışmasın diye, anahtara tarihi de dahil ediyoruz.
+            tarih_damgasi = str(secilen_tarih)
 
             def _yoklama_karti(ogrenci, idx):
                 o_id = int(ogrenci["ogrenci_id"])
-                durum_key = _yoklama_durum_key(o_id)
+                durum_key = f"{_yoklama_durum_key(o_id)}_{tarih_damgasi}"
                 if durum_key not in st.session_state:
-                    st.session_state[durum_key] = "var"
+                    st.session_state[durum_key] = mevcut_durum_haritasi.get(o_id, "var")
 
                 with st.container(border=True, key=f"kart_yoklama_{idx}"):
                     st.markdown(f"**{ogrenci['ad']} {ogrenci['soyad']}**")
@@ -249,7 +277,7 @@ def ogretmen_paneli_goster():
                 try:
                     for _, ogrenci in ogrenciler.iterrows():
                         o_id = int(ogrenci["ogrenci_id"])
-                        durum = st.session_state.get(_yoklama_durum_key(o_id), "var")
+                        durum = st.session_state.get(f"{_yoklama_durum_key(o_id)}_{tarih_damgasi}", "var")
                         mevcut = listele(
                             "SELECT * FROM yoklama WHERE ogrenci_id = ? AND tarih = ?",
                             [o_id, secilen_tarih],

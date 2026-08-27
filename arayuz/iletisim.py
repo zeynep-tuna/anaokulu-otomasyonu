@@ -6,15 +6,6 @@ import streamlit as st
 
 ILETISIM_CSS = """
 <style>
-    .st-key-iletisim_form_karti {
-        background-color: #FFFFFF;
-        border-radius: 16px;
-        padding: 1.5rem 1.8rem;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.06);
-        border: 1px solid #FFE3B8;
-        margin-bottom: 1rem;
-    }
-
     /* İletişim bilgi kartlarına hover */
     .iletisim-kutu {
         transition: transform 0.2s ease, box-shadow 0.2s ease;
@@ -45,7 +36,7 @@ def iletisim_goster():
     """, unsafe_allow_html=True)
     st.markdown('<div class="iletisim-baslik-bosluk-alt"></div>', unsafe_allow_html=True)
 
-    # ---------------- İletişim bilgileri (üstte, başlıksız) ----------------
+    # ---------------- İletişim bilgileri ----------------
     sol, sag = st.columns(2)
     with sol:
         st.markdown("""
@@ -74,14 +65,4 @@ def iletisim_goster():
         </div>
         """, unsafe_allow_html=True)
 
-    # ---------------- Bize Yazın (altta, sola yaslı, formla aynı hizada) ----------------
-    st.markdown("### 💬 Bize Yazın")
-    form_sol, form_sag = st.columns([1.3, 1])
-    with form_sol:
-        with st.container(key="iletisim_form_karti"):
-            with st.form("iletisim_formu"):
-                ad_soyad = st.text_input("Ad Soyad")
-                mesaj = st.text_area("Mesajınız", height=90)
-                gonder = st.form_submit_button("Gönder")
-                if gonder:
-                    st.success("Mesajınız alındı, en kısa sürede size dönüş yapacağız!")
+    st.markdown('<div style="margin-bottom: 3rem;"></div>', unsafe_allow_html=True)

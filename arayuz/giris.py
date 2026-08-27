@@ -9,14 +9,39 @@ from veritabani import listele
 
 GIRIS_CSS = """
 <style>
+    /* Üst araç çubuklarını gizle */
+    header[data-testid="stHeader"],
+    div[data-testid="stToolbar"],
+    div[data-testid="stDecoration"],
+    div[data-testid="stStatusWidget"],
+    .stDeployButton {
+        display: none !important;
+        visibility: hidden !important;
+        height: 0 !important;
+        min-height: 0 !important;
+    }
+
+    /* Sayfanın üst boşluklarını tamamen kaldır */
+    div[data-testid="stMainBlockContainer"],
+    div[data-testid="stAppViewBlockContainer"],
+    .main .block-container,
+    .block-container {
+        padding-top: 0 !important;
+        padding-bottom: 0 !important;
+        margin-top: 0 !important;
+    }
+
+    /* Giriş kartını yukarı taşır */
     .st-key-giris_karti {
         background-color: #FFFFFF;
         border-radius: 20px;
-        padding: 2.5rem 2.5rem 1.5rem 2.5rem;
+        padding: 2.2rem 2.5rem 1.5rem 2.5rem;
         box-shadow: 0 10px 35px rgba(0,0,0,0.12);
         max-width: 430px;
-        margin: 5rem auto !important;
+        margin: -6rem auto 1rem auto !important; /* Kartı belirgin şekilde yukarı çeker */
         border: 1px solid #FFE3B8;
+        position: relative;
+        z-index: 10;
     }
     .giris-logo {
         text-align: center;
@@ -72,9 +97,6 @@ def giris_goster():
             sifre_giris = st.text_input("Şifre", type="password")
             giris_buton = st.form_submit_button("Giriş Yap")
             if giris_buton:
-                # ogretmen_id, veli_id, personel_id de çekiliyor — rol bazlı
-                # panellerde (öğretmen kendi sınıfını, veli kendi çocuğunu
-                # görebilsin diye) hangi kaydın sahibi olduğumuzu bilmemiz lazım.
                 sorgu = """
                     SELECT k.kullanici_adi, r.rol_adi, k.ogretmen_id, k.veli_id, k.personel_id
                     FROM kullanici k
@@ -86,9 +108,7 @@ def giris_goster():
                     st.session_state.giris_yapildi = True
                     st.session_state.rol_adi = sonuc.iloc[0]["rol_adi"]
                     st.session_state.kullanici_adi = sonuc.iloc[0]["kullanici_adi"]
-                    # pandas'tan gelen sayılar numpy.int64 tipinde oluyor,
-                    # pyodbc bunu parametre olarak kabul etmiyor — normal
-                    # Python int'e çeviriyoruz (boşsa None bırakıyoruz).
+
                     def _guvenli_int(deger):
                         return int(deger) if pd.notna(deger) else None
 
